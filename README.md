@@ -1,5 +1,26 @@
 # Backend
 
+## API
+
+| 기능         | Endpoint                          | Method   |
+| ---------- | --------------------------------- | -------- |
+| 로그인        | `/api/users/login`                | `POST`   |
+| 핀 생성하기     | `/api/pins`                       | `POST`   |
+| 전체 핀 조회    | `/api/pins`                       | `GET`    |
+| 핀 상세보기     | `/api/pins/:pinId`                | `POST`   |
+| 핀 검색하기(제목) | `/api/pins/search?search=keyword` | `POST`   |
+| 핀 수정하기     | `/api/pins/:pinId`                | `PUT`    |
+| 핀 삭제하기     | `/api/pins/:pinId`                | `DELETE` |
+| 핀 즐겨찾기     | `/api/pins/:pinId/likes`          | `PUT`    |
+| 댓글 등록      | `/api/pins/:pinId/comments`       | `POST`   |
+| 댓글 불러오기    | `/api/pins/:pinId/comments`       | `GET`    |
+| 댓글 수정      | `/api/pins/comments/:commentId`   | `PUT`    |
+| 댓글 삭제      | `/api/pins/comments/:commentId`   | `DELETE` |
+| 프로필 Page   | `/api/user/:userId`               | `GET`    |
+| 작성한 핀      | `/api/user/:userId/pins`          | `GET`    |
+| 즐겨찾기한 핀    | `/api/users/:userId/likes`        | `GET`    |
+| 프로필 수정     | `/api/users/:userId`              | `PUT`    |
+
 ## Git Commit Message 7가지 규칙
 
 1. 제목과 본문을 **빈 행으로 구분**한다.
