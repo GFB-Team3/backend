@@ -1,41 +1,18 @@
-from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from database import get_db
-from api.models import User
+from api.models import User, Pin
+import schemas
 
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-# --- Pydantic Schemas ---
-# 회원가입 요청 바디
-class SignUpIn(BaseModel):
-    email: EmailStr
-    username: str
-    password: str
-
-# 로그인 요청 바디
-class LoginIn(BaseModel):
-    email: EmailStr
-    password: str
-
-# 유저 응답용 스키마
-class UserOut(BaseModel):
-    user_id: int
-    email: EmailStr
-    username: str
-    created_at: datetime
-
-    model_config = {"from_attributes": True}  # SQLAlchemy 객체 직렬화
-
-
 # --- Password Utils ---
 from passlib.context import CryptContext
-_pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
+_pwd = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
 
 # 해시
 def _hash_password(pw: str) -> str:
@@ -48,29 +25,32 @@ def _verify_password(pw: str, hashed: str) -> bool:
 
 # --- Routes ---
 # 회원가입
-@router.post("/signup", response_model=UserOut, status_code=201)
-async def signup(payload: SignUpIn, db: Session = Depends(get_db)):
-    # 이메일/닉네임 중복 확인
+@router.post("/signup", response_model=schemas.UserOut, status_code=201)
+async def signup(payload: schemas.SignUpIn, db: Session = Depends(get_db)):
+    # 이메일 중복 확인
+    # 유효성 검사 생략
     exists = db.execute(
-        select(User).where((User.email == payload.email) | (User.username == payload.username))
+        select(User).where((User.email == payload.email))
     ).scalar_one_or_none()
     if exists:
-        raise HTTPException(status_code=409, detail="Email or username already exists")
+        raise HTTPException(status_code=409, detail="Email already exists")
 
     user = User(
-        email=payload.email,
-        username=payload.username,
-        password_hash=_hash_password(payload.password),
+        email = payload.email,
+        password_hash = _hash_password(payload.password),
+        username = payload.username,
     )
+
     db.add(user)
     db.commit()
     db.refresh(user)
+
     return user
 
 # 로그인
 # todo: jwt 도입
 @router.post("/login")
-async def login(payload: LoginIn, db: Session = Depends(get_db)):
+async def login(payload: schemas.LoginIn, db: Session = Depends(get_db)):
     user = db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none()
     if not user or not _verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -79,30 +59,37 @@ async def login(payload: LoginIn, db: Session = Depends(get_db)):
 
 # 프로필 조회
 # todo: 인증 + 권한 체크 e.g. 나 자신 or 공개 프로필만
-@router.get("/{user_id}", response_model=UserOut)
+@router.get("/{user_id}", response_model=schemas.UserOut)
 async def profile(user_id: int, db: Session = Depends(get_db)):
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
     return user
 
 # 핀 목록
 # todo: Pin 모델/관계 설정 후 구현
 @router.get("/{user_id}/pins")
-async def get_my_pins(user_id: int):
-    pass
+async def get_my_pins(user_id: int, db: Session = Depends(get_db)):
+    pins = db.execute(
+        select(Pin).where(Pin.user_id == user_id)
+    ).scalars().all()
+
+    return pins
 
 # 프로필 수정
 # todo: 권한 체크
-@router.put("/{user_id}", response_model=UserOut)
-async def update_profile(user_id: int, payload: dict, db: Session = Depends(get_db)):
+@router.put("/{user_id}", response_model=schemas.UserOut)
+async def update_profile(user_id: int, payload: schemas.UserUpdateIn, db: Session = Depends(get_db)):
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # 간단 예시: username만 수정 허용 (원하는 필드로 확장)
-    if "username" in payload:
-        user.username = str(payload["username"])
+    update_data = payload.model_dump(exclude_unset=True)
+    if "username" in update_data:
+        user.username = update_data["username"]
+
     db.commit()
     db.refresh(user)
+
     return user
