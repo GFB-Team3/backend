@@ -43,20 +43,72 @@ class UserOut(BaseModel):
 
 
 # --- pin ---
-# class PinCreate(BaseModel):
-#     pass
 
-# class PinUpdate(BaseModel):
-#     pass
+# Pin 생성 요청
+class PinCreate(BaseModel):
+     user_id: int
+     title: str
+     content: str
+     image: str | None = None
 
+# Pin 업데이트
+class PinUpdate(BaseModel):
+    user_id: int
+    title: str | None = None
+    content: str | None = None
+    image: str | None = None
+    
+
+# Pin 조회 응답
 class PinResponse(BaseModel):
     pin_id: int
     user_id: int
     title: str
-    content: str | None = None
-    image: str
+    content: str 
+    image: str | None = None
     created_at: datetime
     updated_at: datetime
 
     model_config = {"from_attributes": True}
 
+
+# --- like ---
+
+# 즐겨찾기 요청용 (요청 바디/내부 DTO)
+class LikeIn(BaseModel):
+    user_id: int
+    pin_id: int
+
+
+# 즐겨찾기 응답용 (response_model)
+class LikeOut(BaseModel):
+    like_id: int
+    user_id: int
+    pin_id: int
+    created_at: datetime
+    updated_at: datetime
+    model_config = {"from_attributes": True}
+
+
+# --- comment ---
+
+# 댓글 등록
+class CommentCreate(BaseModel):
+    user_id: int
+    pin_id:int
+    content:str
+
+# 댓글 수정
+class CommentUpdate(BaseModel):
+    content: str
+
+# 댓글 불러오기
+class CommentResponse(BaseModel):
+    comment_id: int
+    user_id: int
+    pin_id: int
+    content: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True} # SQLAlchemy 객체 직렬화
