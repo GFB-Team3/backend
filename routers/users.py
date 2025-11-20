@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from database import get_db
-from api.models import User, Pin
+from api.models import User, Pin, Like
 import schemas
 
 
@@ -11,9 +11,13 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 # --- Password Utils ---
+#from passlib.context import CryptContext
+#_pwd = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
 from passlib.context import CryptContext
-_pwd = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
 
+# bcrypt 대신 pbkdf2_sha256 사용
+_pwd = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto",
+)
 # 해시
 def _hash_password(pw: str) -> str:
     return _pwd.hash(pw)
@@ -23,7 +27,7 @@ def _verify_password(pw: str, hashed: str) -> bool:
     return _pwd.verify(pw, hashed)
 
 
-# --- Routes ---
+# --- Routes --- 
 # 회원가입
 @router.post("/signup", response_model=schemas.UserOut, status_code=201)
 async def signup(payload: schemas.SignUpIn, db: Session = Depends(get_db)):
@@ -93,3 +97,22 @@ async def update_profile(user_id: int, payload: schemas.UserUpdateIn, db: Sessio
     db.refresh(user)
 
     return user
+
+
+# 즐겨찾기한 핀 보기
+@router.get("/{user_id}/likes", response_model=list[schemas.PinResponse])
+async def get_likes(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    
+    likes = db.query(Like).filter(Like.user_id == user_id).all()
+
+    if not likes:
+        return []
+    
+    pin_ids = [like.pin_id for like in likes]
+
+    pins = db.query(Pin).filter(Pin.pin_id.in_(pin_ids)).all()
+
+    return pins
