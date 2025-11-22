@@ -102,18 +102,16 @@ async def update_pin(
 @router.delete("/{pin_id}")
 async def delete_pin(
     pin_id: int,
-    user_id: int,
-    db: Session = Depends(get_db)
+    payload: schemas.PinDelete,   
+    db: Session = Depends(get_db),
 ):
-    # 핀 찾기
     pin = db.get(Pin, pin_id)
     if not pin:
         raise HTTPException(status_code=404, detail="Pin not found")
-    
-    # 권한 체크
-    if pin.user_id != user_id:
+
+    if pin.user_id != payload.user_id:
         raise HTTPException(status_code=403, detail="Not allowed to delete this pin")
-    
+
     db.delete(pin)
     db.commit()
 
@@ -198,24 +196,21 @@ async def create_like(
     
 
 # 댓글 등록
-@router.post("/{pin_id}/comments", response_model = schemas.CommentResponse, status_code = status.HTTP_201_CREATED)
+@router.post("/{pin_id}/comments", response_model=schemas.CommentResponse, status_code=status.HTTP_201_CREATED)
 async def create_comment(
-    user_id: int,
     pin_id: int,
-    content: str,
-    db: Session = Depends(get_db)
+    payload: schemas.CommentCreate,   
+    db: Session = Depends(get_db),
 ):
-    
     pin = db.get(Pin, pin_id)
     if not pin:
         raise HTTPException(status_code=404, detail="Pin not found")
-    
-    comment_data = schemas.CommentCreate(
-        user_id=user_id,
+
+    new_comment = Comment(
+        user_id=payload.user_id,
         pin_id=pin_id,
-        content=content
+        content=payload.content,
     )
-    new_comment = Comment(**comment_data.model_dump())
 
     db.add(new_comment)
     db.commit()
@@ -224,37 +219,33 @@ async def create_comment(
     return new_comment
 
 # 댓글 불러오기
-@router.get("/comments/{comment_id}", response_model = schemas.CommentResponse)
+@router.get("/comments/{comment_id}", response_model=schemas.CommentResponse)
 async def get_comment(
     comment_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     comment = db.get(Comment, comment_id)
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
-    
+
     return comment
 
 # 댓글 수정
 @router.put("/comments/{comment_id}", response_model=schemas.CommentResponse)
 async def update_comment(
     comment_id: int,
-    update_data: schemas.CommentUpdate,   
-    user_id: int,                        
-    db: Session = Depends(get_db)
+    payload: schemas.CommentUpdate,   
+    db: Session = Depends(get_db),
 ):
-    # 댓글 찾기
     comment = db.get(Comment, comment_id)
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
-    
-    # 권한 체크
-    if comment.user_id != user_id:
+
+    if comment.user_id != payload.user_id:
         raise HTTPException(status_code=403, detail="Not allowed to edit this comment")
-    
-    # 내용 수정
-    comment.content = update_data.content
-    
+
+    comment.content = payload.content
+
     db.commit()
     db.refresh(comment)
 
@@ -265,20 +256,17 @@ async def update_comment(
 # 댓글 삭제
 @router.delete("/comments/{comment_id}")
 async def delete_comment(
-    user_id: int,
     comment_id: int,
-    db: Session = Depends(get_db)
+    payload: schemas.CommentDelete,  
+    db: Session = Depends(get_db),
 ):
-    
-     # 댓글 찾기
     comment = db.get(Comment, comment_id)
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
-    
-    # 권한 체크
-    if comment.user_id != user_id:
+
+    if comment.user_id != payload.user_id:
         raise HTTPException(status_code=403, detail="Not allowed to delete this comment")
-    
+
     db.delete(comment)
     db.commit()
 
