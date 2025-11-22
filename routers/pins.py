@@ -21,7 +21,7 @@ async def create_pin(
 ):  
     image_url: str | None = None
     # 이미지 저장 처리
-    if image:
+    if image is not None and image.filename:
         # 확장자 추출
         ext = image.filename.split(".")[-1]
         
@@ -79,7 +79,7 @@ async def update_pin(
     if content is not None:
         pin.content = content
     
-    if image:
+    if image is not None and image.filename:
         ext = image.filename.split(".")[-1]
         filename = f"{uuid.uuid4()}.{ext}"
 
