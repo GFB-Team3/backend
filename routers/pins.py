@@ -164,7 +164,7 @@ async def list_pins(db: Session = Depends(get_db)):
 @router.post("/{pin_id}/likes", response_model=schemas.LikeOut)
 async def create_like(
     pin_id: int,
-    payload: schemas.LikeCreate,        
+    payload: schemas.LikeIn,        
     db: Session = Depends(get_db),
 ):
     # 핀 존재 여부 확인

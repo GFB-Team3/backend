@@ -57,6 +57,10 @@ class PinUpdate(BaseModel):
     title: str | None = None
     content: str | None = None
     image: str | None = None
+
+# Pin 삭제
+class PinDelete(BaseModel):
+    user_id: int
     
 
 # Pin 조회 응답
