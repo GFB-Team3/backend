@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware 
 
 from routers import users as users_router
 from routers import pins as pins_router
@@ -14,7 +15,22 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
         openapi_url="/openapi.json",
     )
+
+    # 
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ],
+        allow_credentials=True,
+        allow_methods=["*"],   
+        allow_headers=["*"],   
+    )
+
     Base.metadata.create_all(bind=engine)
+
+
     app.include_router(users_router.router, prefix="/api")
     app.include_router(pins_router.router, prefix="/api")
 
@@ -27,5 +43,6 @@ def create_app() -> FastAPI:
         }
     
     return app
+
 
 app = create_app()
