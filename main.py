@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware 
+from fastapi.staticfiles import StaticFiles
 
 from routers import users as users_router
 from routers import pins as pins_router
@@ -33,6 +34,12 @@ def create_app() -> FastAPI:
 
     app.include_router(users_router.router, prefix="/api")
     app.include_router(pins_router.router, prefix="/api")
+
+    app.mount(
+        "/src",                    
+        StaticFiles(directory="src"),  
+        name="src",
+    )    
 
     @app.get("/", include_in_schema=False)
     async def index():
