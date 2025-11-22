@@ -167,6 +167,7 @@ async def create_like(
     payload: schemas.LikeIn,        
     db: Session = Depends(get_db),
 ):
+    user_id = payload.user_id
     # 핀 존재 여부 확인
     pin = db.get(Pin, pin_id)
     if not pin:
@@ -181,12 +182,10 @@ async def create_like(
     if existing_like:
         raise HTTPException(status_code=409, detail="Already liked")
 
-    like_data = schemas.LikeIn(
+    new_like = Like(
         user_id=user_id,
         pin_id=pin_id,
     )
-
-    new_like  = Like(**like_data.model_dump())
 
     db.add(new_like)
     db.commit()
