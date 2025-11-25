@@ -164,9 +164,10 @@ async def list_pins(db: Session = Depends(get_db)):
 @router.post("/{pin_id}/likes", response_model=schemas.LikeOut)
 async def create_like(
     pin_id: int,
-    user_id: int,
-    db: Session = Depends(get_db)
+    payload: schemas.LikeIn,        
+    db: Session = Depends(get_db),
 ):
+    user_id = payload.user_id
     # 핀 존재 여부 확인
     pin = db.get(Pin, pin_id)
     if not pin:
@@ -181,12 +182,10 @@ async def create_like(
     if existing_like:
         raise HTTPException(status_code=409, detail="Already liked")
 
-    like_data = schemas.LikeIn(
+    new_like = Like(
         user_id=user_id,
         pin_id=pin_id,
     )
-
-    new_like  = Like(**like_data.model_dump())
 
     db.add(new_like)
     db.commit()
@@ -219,16 +218,24 @@ async def create_comment(
     return new_comment
 
 # 댓글 불러오기
-@router.get("/comments/{comment_id}", response_model=schemas.CommentResponse)
-async def get_comment(
-    comment_id: int,
+@router.get("/{pin_id}/comments", response_model=list[schemas.CommentResponse])
+async def list_comments(
+    pin_id: int,
     db: Session = Depends(get_db),
 ):
-    comment = db.get(Comment, comment_id)
-    if not comment:
-        raise HTTPException(status_code=404, detail="Comment not found")
+    # 핀 존재 여부 체크
+    pin = db.get(Pin, pin_id)
+    if not pin:
+        raise HTTPException(status_code=404, detail="Pin not found")
 
-    return comment
+    comments = (
+        db.query(Comment)
+        .filter(Comment.pin_id == pin_id)
+        .order_by(Comment.created_at.asc())
+        .all()
+    )
+
+    return comments
 
 # 댓글 수정
 @router.put("/comments/{comment_id}", response_model=schemas.CommentResponse)

@@ -26,6 +26,7 @@ def create_app() -> FastAPI:
 
     origins = [
         "http://localhost:3000",
+        "http://127.0.0.1:3000",
     ]
 
     app.add_middleware(
@@ -44,11 +45,19 @@ def create_app() -> FastAPI:
     app.include_router(pins_router.router, prefix="/api")
     
     # React 정적 파일 서빙
-    app.mount("/static", StaticFiles(directory=FRONTEND_DIR / "static"), name="static")
+    app.mount(
+        "/src",                    
+        StaticFiles(directory="src"),  
+        name="src",
+    )    
 
-    @app.get("/")
-    def index():
-        return FileResponse("index.html")
+    @app.get("/", include_in_schema=False)
+    async def index():
+        return {
+            "status": "ok",
+            "service": "pintere5t backend",
+            "docs": "/docs",
+        }
     
     return app
 
